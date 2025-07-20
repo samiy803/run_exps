@@ -1,0 +1,54 @@
+{
+    "algorithm": "TD3",
+    "env_id": "racetrack-v0",
+    "env_config": {},
+    "n_envs": 4,
+    "total_timesteps": 300000,
+    "tuning_fraction": 0.20,
+    "n_trials": 50,
+    "search_space": {
+        "learning_rate": {
+            "method": "log_uniform",
+            "low": 1e-5,
+            "high": 3e-3
+        },
+        "batch_size": {
+            "method": "categorical",
+            "choices": [
+                128,
+                256,
+                512
+            ]
+        },
+        "tau": {
+            "method": "log_uniform",
+            "low": 1e-4,
+            "high": 1e-2
+        },
+        "gamma": {
+            "method": "uniform",
+            "low": 0.95,
+            "high": 0.999
+        },
+        "policy_delay": {
+            "method": "int_uniform",
+            "low": 1,
+            "high": 3
+        },
+        "target_policy_noise": {
+            "method": "uniform",
+            "low": 0.1,
+            "high": 0.5
+        },
+        "target_noise_clip": {
+            "method": "uniform",
+            "low": 0.2,
+            "high": 0.6
+        },
+        "learning_starts": {
+            "method": "int_uniform",
+            "low": 100,
+            "high": 20000
+        }
+    }
+}

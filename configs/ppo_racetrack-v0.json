@@ -1,0 +1,57 @@
+{
+    "algorithm": "PPO",
+    "env_id": "racetrack-v0",
+    "env_config": {},
+    "n_envs": 4,
+    "total_timesteps": 300000,
+    "tuning_fraction": 0.20,
+    "n_trials": 50,
+    "search_space": {
+        "learning_rate": {
+            "method": "log_uniform",
+            "low": 1e-5,
+            "high": 1e-3
+        },
+        "n_steps": {
+            "method": "int_uniform",
+            "low": 512,
+            "high": 4096
+        },
+        "batch_size": {
+            "method": "categorical",
+            "choices": [
+                64,
+                128,
+                256
+            ]
+        },
+        "n_epochs": {
+            "method": "categorical",
+            "choices": [
+                5,
+                10,
+                20
+            ]
+        },
+        "gamma": {
+            "method": "uniform",
+            "low": 0.95,
+            "high": 0.999
+        },
+        "gae_lambda": {
+            "method": "uniform",
+            "low": 0.9,
+            "high": 0.98
+        },
+        "clip_range": {
+            "method": "uniform",
+            "low": 0.1,
+            "high": 0.4
+        },
+        "ent_coef": {
+            "method": "log_uniform",
+            "low": 1e-5,
+            "high": 1e-2
+        }
+    }
+}

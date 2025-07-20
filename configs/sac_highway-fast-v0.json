@@ -1,0 +1,56 @@
+{
+    "algorithm": "SAC",
+    "env_id": "highway-fast-v0",
+    "env_config": {},
+    "n_envs": 4,
+    "total_timesteps": 300000,
+    "tuning_fraction": 0.20,
+    "n_trials": 50,
+    "search_space": {
+        "learning_rate": {
+            "method": "log_uniform",
+            "low": 1e-5,
+            "high": 3e-3
+        },
+        "batch_size": {
+            "method": "categorical",
+            "choices": [
+                128,
+                256,
+                512
+            ]
+        },
+        "tau": {
+            "method": "log_uniform",
+            "low": 1e-4,
+            "high": 2e-2
+        },
+        "gamma": {
+            "method": "uniform",
+            "low": 0.95,
+            "high": 0.9999
+        },
+        "gradient_steps": {
+            "method": "categorical",
+            "choices": [
+                1,
+                2,
+                4
+            ]
+        },
+        "learning_starts": {
+            "method": "int_uniform",
+            "low": 1000,
+            "high": 20000
+        },
+        "ent_coef": {
+            "method": "categorical",
+            "choices": [
+                "auto",
+                0.1,
+                0.2,
+                0.5
+            ]
+        }
+    }
+}
