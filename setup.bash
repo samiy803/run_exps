@@ -30,7 +30,8 @@ pip install \
   optunahub \
   wandb \
   optuna-dashboard \
-  pyvirtualdisplay
+  pyvirtualdisplay \
+  requests
 
 echo ">>> [4/4] Done!  Activate with:"
 echo "     source ${VENV_NAME}/bin/activate"

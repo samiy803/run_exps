@@ -17,6 +17,8 @@ from stable_baselines3.common.callbacks import BaseCallback
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
+import requests
+
 ALGOS = {"PPO": PPO, "TD3": TD3, "SAC": SAC}
 
 
@@ -33,7 +35,12 @@ class OptunaPruningCallback(BaseCallback):
 
     def _on_step(self):
         if self.num_timesteps >= self._next_eval:
-            m, _ = evaluate_policy(self.model, self.eval_env, n_eval_episodes=self.n_eval_episodes, warn=False)
+            m, _ = evaluate_policy(
+                self.model,
+                self.eval_env,
+                n_eval_episodes=self.n_eval_episodes,
+                warn=False,
+            )
             self.trial.report(m, step=self.num_timesteps)
             if self.trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
@@ -43,15 +50,18 @@ class OptunaPruningCallback(BaseCallback):
 
 def make_env(env_id, env_config, seed, rank):
     def _init():
-        import highway_env 
+        import highway_env
+
         env = gym.make(env_id, config=env_config, render_mode=None)
         env.reset(seed=seed + rank)
         return env
+
     return _init
 
 
 def objective(trial, cfg, tuning_ts, n_envs):
     """Objective function for Optuna hyperparameter tuning."""
+
     def suggest(space):
         """Convert search space to Optuna suggestions."""
         out = {}
@@ -71,14 +81,27 @@ def objective(trial, cfg, tuning_ts, n_envs):
 
     params = suggest(cfg["search_space"])
 
-    env_fns = [make_env(cfg["env_id"], cfg.get("env_config", {}), seed=0, rank=i) for i in range(n_envs)]
-    train_env = VecNormalize(SubprocVecEnv(env_fns), norm_obs=True, norm_reward=True, gamma=params.get("gamma", 0.99))
-    eval_env  = VecNormalize(SubprocVecEnv(env_fns), norm_obs=True, norm_reward=False, gamma=params.get("gamma", 0.99))
+    env_fns = [
+        make_env(cfg["env_id"], cfg.get("env_config", {}), seed=0, rank=i)
+        for i in range(n_envs)
+    ]
+    train_env = VecNormalize(
+        SubprocVecEnv(env_fns),
+        norm_obs=True,
+        norm_reward=True,
+        gamma=params.get("gamma", 0.99),
+    )
+    eval_env = VecNormalize(
+        SubprocVecEnv(env_fns),
+        norm_obs=True,
+        norm_reward=False,
+        gamma=params.get("gamma", 0.99),
+    )
 
     model = ALGOS[cfg["algorithm"]](
         "MlpPolicy",
         train_env,
-        tensorboard_log=None, # No tensorboard logging for tuning
+        tensorboard_log=None,  # No tensorboard logging for tuning
         verbose=0,
         **params,
     )
@@ -89,7 +112,8 @@ def objective(trial, cfg, tuning_ts, n_envs):
     model.learn(tuning_ts, callback=pruning_cb, progress_bar=False)
 
     mean_r, _ = evaluate_policy(model, eval_env, n_eval_episodes=3, warn=False)
-    train_env.close(); eval_env.close()
+    train_env.close()
+    eval_env.close()
     return float(mean_r)
 
 
@@ -103,14 +127,12 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
     total_ts = int(cfg["total_timesteps"])
     tuning_ts = int(total_ts * cfg.get("tuning_fraction", 0.2))
 
-    
     hb = cfg.get("hyperband", {})
     pruner = HyperbandPruner(
         min_resource=int(hb.get("min_resource", tuning_ts // 4)),
         max_resource=int(hb.get("max_resource", tuning_ts)),
         reduction_factor=int(hb.get("reduction_factor", 3)),
     )
-
 
     storage = f"sqlite:///{out_dir}/study.db"
     study = optuna.create_study(
@@ -122,30 +144,54 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
         pruner=pruner,
     )
 
-    study.optimize(partial(objective, cfg=cfg, tuning_ts=tuning_ts, n_envs=n_envs),
-                   n_trials=cfg["n_trials"], n_jobs=1, show_progress_bar=False)
+    study.optimize(
+        partial(objective, cfg=cfg, tuning_ts=tuning_ts, n_envs=n_envs),
+        n_trials=cfg["n_trials"],
+        n_jobs=1,
+        show_progress_bar=False,
+    )
 
-    
     (out_dir / "best_params.json").write_text(json.dumps(study.best_params, indent=2))
     study.trials_dataframe().to_csv(out_dir / "trials.csv", index=False)
     with open(out_dir / "study_info.json", "w") as f:
-        json.dump({
-            "study_name": study.study_name,
-            "n_trials": len(study.trials),
-            "best_trial": study.best_trial.number,
-            "best_value": study.best_value,
-            "best_params": study.best_params,
-        }, f, indent=2)
+        json.dump(
+            {
+                "study_name": study.study_name,
+                "n_trials": len(study.trials),
+                "best_trial": study.best_trial.number,
+                "best_value": study.best_value,
+                "best_params": study.best_params,
+            },
+            f,
+            indent=2,
+        )
 
     # Train final model with best hyperparameters
-    env_fns = [make_env(cfg["env_id"], cfg.get("env_config", {}), seed=42, rank=i) for i in range(n_envs)]
-    final_env = VecNormalize(SubprocVecEnv(env_fns), norm_obs=True, norm_reward=True, gamma=study.best_params.get("gamma", 0.99))
+    env_fns = [
+        make_env(cfg["env_id"], cfg.get("env_config", {}), seed=42, rank=i)
+        for i in range(n_envs)
+    ]
+    final_env = VecNormalize(
+        SubprocVecEnv(env_fns),
+        norm_obs=True,
+        norm_reward=True,
+        gamma=study.best_params.get("gamma", 0.99),
+    )
 
     tb_dir = out_dir / "tensorboard"
     callbacks = []
-    if upload == "wandb" and wandb is not None and WandbCallback is not None and wandb_project:
-        run = wandb.init(project=wandb_project, name=exp_name, config=study.best_params, reinit=True)
-        callbacks.append(WandbCallback(model_save_path=str(out_dir / "wandb_models"), verbose=0))
+    if (
+        upload == "wandb"
+        and wandb is not None
+        and WandbCallback is not None
+        and wandb_project
+    ):
+        run = wandb.init(
+            project=wandb_project, name=exp_name, config=study.best_params, reinit=True
+        )
+        callbacks.append(
+            WandbCallback(model_save_path=str(out_dir / "wandb_models"), verbose=0)
+        )
     else:
         run = None
 
@@ -161,12 +207,10 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
     final_model.save(out_dir / "final_model.zip")
     final_env.close()
 
-
     zip_path = out_dir.with_suffix(".zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in out_dir.rglob("*"):
             z.write(p, p.relative_to(out_dir))
-
 
     if upload == "wandb" and run is not None:
         art = wandb.Artifact(exp_name, type="rl-experiment")
@@ -183,7 +227,13 @@ def main():
     args = ap.parse_args()
 
     for cfg in sorted(glob.glob(os.path.join(args.configs_dir, "*.json"))):
-        run_single(cfg, upload=args.upload, wandb_project=args.wandb_project)
+        try:
+            run_single(cfg, upload=args.upload, wandb_project=args.wandb_project)
+            requests.post("https://ntfy.sh/ece457crunexps", data=f"{cfg} success!".encode(encoding='utf-8'))
+        except Exception as e:
+            requests.post("https://ntfy.sh/ece457crunexps", data=f"{cfg} failed :(".encode(encoding='utf-8'))
+            continue
+
 
 if __name__ == "__main__":
     main()
