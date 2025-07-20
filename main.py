@@ -16,6 +16,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
+from optuna_integration.wandb import WeightsAndBiasesCallback
 
 import requests
 
@@ -144,11 +145,22 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
         pruner=pruner,
     )
 
+    wandbc = WeightsAndBiasesCallback(
+        metric_name="value",
+        wandb_kwargs={
+            "project": wandb_project,
+            "group": exp_name,
+            "name": f"{exp_name}-tuning",
+        },
+        as_multirun=True,
+    )
+
     study.optimize(
         partial(objective, cfg=cfg, tuning_ts=tuning_ts, n_envs=n_envs),
         n_trials=cfg["n_trials"],
         n_jobs=1,
         show_progress_bar=False,
+        callbacks=[wandbc] if upload == "wandb" and wandb_project else None,
     )
 
     (out_dir / "best_params.json").write_text(json.dumps(study.best_params, indent=2))
@@ -187,7 +199,7 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
         and wandb_project
     ):
         run = wandb.init(
-            project=wandb_project, name=exp_name, config=study.best_params, reinit=True
+            project=wandb_project, group=exp_name, name=f"{exp_name}-train_final", config=study.best_params, reinit=True
         )
         callbacks.append(
             WandbCallback(model_save_path=str(out_dir / "wandb_models"), verbose=0)
@@ -229,9 +241,15 @@ def main():
     for cfg in sorted(glob.glob(os.path.join(args.configs_dir, "*.json"))):
         try:
             run_single(cfg, upload=args.upload, wandb_project=args.wandb_project)
-            requests.post("https://ntfy.sh/ece457crunexps", data=f"{cfg} success!".encode(encoding='utf-8'))
+            requests.post(
+                "https://ntfy.sh/ece457crunexps",
+                data=f"{cfg} success!".encode(encoding="utf-8"),
+            )
         except Exception as e:
-            requests.post("https://ntfy.sh/ece457crunexps", data=f"{cfg} failed :(".encode(encoding='utf-8'))
+            requests.post(
+                "https://ntfy.sh/ece457crunexps",
+                data=f"{cfg} failed :(".encode(encoding="utf-8"),
+            )
             continue
 
 
