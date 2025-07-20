@@ -1,8 +1,29 @@
 {
     "algorithm": "TD3",
     "env_id": "highway-fast-v0",
-    "env_config": {},
-    "n_envs": 4,
+    "env_config": {
+        "observation": {
+            "type": "Kinematics",
+            "vehicles_count": 15,
+            "features": [
+                "presence",
+                "x",
+                "y",
+                "vx",
+                "vy",
+                "heading",
+                "lat_off",
+                "ang_off",
+                "cos_h",
+                "sin_h"
+            ],
+            "absolute": false
+        },
+        "action": {
+            "type": "ContinuousAction"
+        }
+    },
+    "n_envs": 8,
     "total_timesteps": 300000,
     "tuning_fraction": 0.20,
     "n_trials": 50,

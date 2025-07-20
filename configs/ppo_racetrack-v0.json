@@ -1,8 +1,34 @@
 {
     "algorithm": "PPO",
     "env_id": "racetrack-v0",
-    "env_config": {},
-    "n_envs": 4,
+    "env_config": {
+        "observation": {
+            "type": "OccupancyGrid",
+            "features": [
+                "presence",
+                "on_road",
+                "vx",
+                "vy"
+            ],
+            "grid_size": [
+                [
+                    -18,
+                    18
+                ],
+                [
+                    -18,
+                    18
+                ]
+            ],
+            "grid_step": [
+                3,
+                3
+            ],
+            "as_image": false,
+            "align_to_vehicle_axes": true
+        }
+    },
+    "n_envs": 8,
     "total_timesteps": 300000,
     "tuning_fraction": 0.20,
     "n_trials": 50,
