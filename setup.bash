@@ -15,7 +15,7 @@ sudo apt-get install -y --no-install-recommends \
 
 echo ">>> [2/4] Creating virtual environment: ${VENV_NAME}"
 ${PYTHON_BIN} -m venv "${VENV_NAME}"
-# shellcheck disable=SC1090
+
 source "${VENV_NAME}/bin/activate"
 
 echo ">>> [3/4] Upgrading pip & installing Python requirements..."
