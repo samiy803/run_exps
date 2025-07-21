@@ -152,6 +152,8 @@ def objective(trial, cfg, tuning_ts, n_envs):
 
 
 def run_single(cfg_path: str, upload: str, wandb_project: str):
+    study = None
+    run = None
     try:
         cfg = json.load(open(cfg_path))
         exp_name = pathlib.Path(cfg_path).stem
