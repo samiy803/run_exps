@@ -159,7 +159,7 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
         partial(objective, cfg=cfg, tuning_ts=tuning_ts, n_envs=n_envs),
         n_trials=cfg["n_trials"],
         n_jobs=1,
-        show_progress_bar=False,
+        show_progress_bar=True,
         callbacks=[wandbc] if upload == "wandb" and wandb_project else None,
     )
 
