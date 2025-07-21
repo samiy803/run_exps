@@ -14,7 +14,7 @@ from optuna.samplers import TPESampler
 from stable_baselines3 import PPO, TD3, SAC
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
 
 import wandb
@@ -229,8 +229,25 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             gamma=study.best_params.get("gamma", 0.99),
         )
 
+        eval_env = VecNormalize(
+            SubprocVecEnv(env_fns),
+            norm_obs=True,
+            norm_reward=False,
+            gamma=study.best_params.get("gamma", 0.99),
+        )
+
         tb_dir = out_dir / "tensorboard"
-        callbacks = []
+        eval_callback = EvalCallback(
+            eval_env,
+            best_model_save_path=str(out_dir / "eval_models"),
+            log_path=str(tb_dir),
+            eval_freq=max(1000, total_ts // 10),
+            n_eval_episodes=3,
+            deterministic=True,
+            render=False,
+            verbose=0,
+        )
+        callbacks = [eval_callback]
         if (
             upload == "wandb"
             and wandb is not None
