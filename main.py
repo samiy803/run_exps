@@ -1,4 +1,7 @@
-import argparse, glob, json, os, pathlib, zipfile
+import os
+os.environ.update({ "OMP_NUM_THREADS":"1", "MKL_NUM_THREADS":"1", "OPENBLAS_NUM_THREADS":"1" })
+
+import argparse, glob, json, pathlib, zipfile
 from functools import partial
 
 import gymnasium as gym
@@ -162,13 +165,13 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
 
         n_envs = int(cfg.get("n_envs", 4))
         total_ts = int(cfg["total_timesteps"])
-        tuning_ts = int(total_ts * cfg.get("tuning_fraction", 0.2))
+        tuning_ts = int(total_ts * cfg.get("tuning_fraction", 0.15))
 
         hb = cfg.get("hyperband", {})
         pruner = HyperbandPruner(
             min_resource=int(hb.get("min_resource", tuning_ts // 4)),
             max_resource=int(hb.get("max_resource", tuning_ts)),
-            reduction_factor=int(hb.get("reduction_factor", 3)),
+            reduction_factor=int(hb.get("reduction_factor", 4)),
         )
 
         storage = f"sqlite:///{out_dir}/study.db"

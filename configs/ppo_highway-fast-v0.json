@@ -20,7 +20,7 @@
             "absolute": false
         }
     },
-    "n_envs": 64,
+    "n_envs": 32,
     "total_timesteps": 200000,
     "tuning_fraction": 0.15,
     "n_trials": 50,
