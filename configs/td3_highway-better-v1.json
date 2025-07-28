@@ -1,31 +1,23 @@
 {
     "algorithm": "TD3",
-    "env_id": "racetrack-v0",
+    "env_id": "highway-better-v1",
     "env_config": {
         "observation": {
-            "type": "OccupancyGrid",
+            "type": "Kinematics",
+            "vehicles_count": 15,
             "features": [
                 "presence",
-                "on_road",
+                "x",
+                "y",
                 "vx",
-                "vy"
+                "vy",
+                "heading",
+                "lat_off",
+                "ang_off",
+                "cos_h",
+                "sin_h"
             ],
-            "grid_size": [
-                [
-                    -18,
-                    18
-                ],
-                [
-                    -18,
-                    18
-                ]
-            ],
-            "grid_step": [
-                3,
-                3
-            ],
-            "as_image": false,
-            "align_to_vehicle_axes": true
+            "absolute": false
         }
     },
     "n_envs": 32,

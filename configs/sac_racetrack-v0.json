@@ -29,9 +29,9 @@
         }
     },
     "n_envs": 32,
-    "total_timesteps": 200000,
-    "tuning_fraction": 0.15,
-    "n_trials": 50,
+    "total_timesteps": 500000,
+    "tuning_fraction": 0.5,
+    "n_trials": 35,
     "search_space": {
         "learning_rate": {
             "method": "log_uniform",

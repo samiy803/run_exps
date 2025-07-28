@@ -54,7 +54,7 @@ def cleanup(study=None, wandb_run=None):
 class OptunaPruningCallback(BaseCallback):
     """Reports episodic return to Optuna and prunes under‑performing trials."""
 
-    def __init__(self, trial, eval_env, eval_freq, n_eval_episodes=1):
+    def __init__(self, trial, eval_env, eval_freq, n_eval_episodes=5):
         super().__init__(verbose=0)
         self.trial = trial
         self.eval_env = eval_env
@@ -169,9 +169,9 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
 
         hb = cfg.get("hyperband", {})
         pruner = HyperbandPruner(
-            min_resource=int(hb.get("min_resource", tuning_ts // 4)),
+            min_resource=int(hb.get("min_resource", tuning_ts // 3)),
             max_resource=int(hb.get("max_resource", tuning_ts)),
-            reduction_factor=int(hb.get("reduction_factor", 4)),
+            reduction_factor=int(hb.get("reduction_factor", 2)),
         )
 
         storage = f"sqlite:///{out_dir}/study.db"
@@ -241,8 +241,8 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             eval_env,
             best_model_save_path=str(out_dir / "eval_models"),
             log_path=str(tb_dir),
-            eval_freq=max(1000, total_ts // 10),
-            n_eval_episodes=3,
+            eval_freq=max(1000, total_ts // 10) // n_envs,
+            n_eval_episodes=5,
             deterministic=True,
             render=False,
             verbose=0,
