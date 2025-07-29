@@ -1,0 +1,59 @@
+{
+    "algorithm": "TD3",
+    "env_id": "intersection-v0",
+    "env_config": {
+        "observation": {
+            "type": "Kinematics",
+            "vehicles_count": 15,
+            "features": [
+                "presence",
+                "x",
+                "y",
+                "vx",
+                "vy",
+                "cos_h",
+                "sin_h"
+            ],
+            "features_range": {
+                "x": [
+                    -100,
+                    100
+                ],
+                "y": [
+                    -100,
+                    100
+                ],
+                "vx": [
+                    -20,
+                    20
+                ],
+                "vy": [
+                    -20,
+                    20
+                ]
+            },
+            "absolute": true,
+            "flatten": false,
+            "observe_intentions": false
+        },
+        "action": {
+            "type": "ContinuousAction",
+            "longitudinal": false,
+            "lateral": true
+        }
+    },
+    "n_envs": 32,
+    "total_timesteps": 500000,
+    "tuning_fraction": 0.15,
+    "n_trials": 50,
+    "best_params": {
+        "learning_rate": 8.027337814607524e-05,
+        "batch_size": 512,
+        "tau": 0.0016625741279591671,
+        "gamma": 0.9633237013260568,
+        "policy_delay": 3,
+        "target_policy_noise": 0.12587550359596178,
+        "target_noise_clip": 0.5757456702831447,
+        "learning_starts": 8481
+    }
+}

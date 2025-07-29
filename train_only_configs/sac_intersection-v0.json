@@ -1,6 +1,6 @@
 {
-    "algorithm": "PPO",
-    "env_id": "intersection-v1",
+    "algorithm": "SAC",
+    "env_id": "intersection-v0",
     "env_config": {
         "observation": {
             "type": "Kinematics",
@@ -37,61 +37,60 @@
             "observe_intentions": false
         },
         "action": {
-            "type": "DiscreteMetaAction",
+            "type": "ContinuousAction",
             "longitudinal": false,
             "lateral": true
         }
     },
     "n_envs": 32,
-    "total_timesteps": 500000,
-    "tuning_fraction": 0.5,
-    "n_trials": 35,
+    "total_timesteps": 200000,
+    "tuning_fraction": 0.15,
+    "n_trials": 50,
     "search_space": {
         "learning_rate": {
             "method": "log_uniform",
             "low": 1e-5,
-            "high": 1e-3
-        },
-        "n_steps": {
-            "method": "int_uniform",
-            "low": 512,
-            "high": 4096
+            "high": 3e-3
         },
         "batch_size": {
             "method": "categorical",
             "choices": [
-                64,
                 128,
-                256
+                256,
+                512
             ]
         },
-        "n_epochs": {
-            "method": "categorical",
-            "choices": [
-                5,
-                10,
-                20
-            ]
+        "tau": {
+            "method": "log_uniform",
+            "low": 1e-4,
+            "high": 2e-2
         },
         "gamma": {
             "method": "uniform",
             "low": 0.95,
-            "high": 0.999
+            "high": 0.9999
         },
-        "gae_lambda": {
-            "method": "uniform",
-            "low": 0.9,
-            "high": 0.98
+        "gradient_steps": {
+            "method": "categorical",
+            "choices": [
+                1,
+                2,
+                4
+            ]
         },
-        "clip_range": {
-            "method": "uniform",
-            "low": 0.1,
-            "high": 0.4
+        "learning_starts": {
+            "method": "int_uniform",
+            "low": 1000,
+            "high": 20000
         },
         "ent_coef": {
-            "method": "log_uniform",
-            "low": 1e-5,
-            "high": 1e-2
+            "method": "categorical",
+            "choices": [
+                "auto",
+                0.1,
+                0.2,
+                0.5
+            ]
         }
     }
 }

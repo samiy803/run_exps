@@ -1,0 +1,45 @@
+{
+    "algorithm": "PPO",
+    "env_id": "racetrack-v0",
+    "env_config": {
+        "observation": {
+            "type": "OccupancyGrid",
+            "features": [
+                "presence",
+                "on_road",
+                "vx",
+                "vy"
+            ],
+            "grid_size": [
+                [
+                    -18,
+                    18
+                ],
+                [
+                    -18,
+                    18
+                ]
+            ],
+            "grid_step": [
+                3,
+                3
+            ],
+            "as_image": false,
+            "align_to_vehicle_axes": true
+        }
+    },
+    "n_envs": 32,
+    "total_timesteps": 500000,
+    "tuning_fraction": 0.15,
+    "n_trials": 50,
+    "best_params": {
+        "learning_rate": 0.0007030303028703497,
+        "n_steps": 570,
+        "batch_size": 64,
+        "n_epochs": 20,
+        "gamma": 0.9948279489454929,
+        "gae_lambda": 0.920884744134698,
+        "clip_range": 0.20934986236124176,
+        "ent_coef": 6.263910220080893e-05
+    }
+}

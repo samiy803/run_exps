@@ -158,8 +158,6 @@ def objective(trial, cfg, tuning_ts, n_envs):
 
 
 def run_single(cfg_path: str, upload: str, wandb_project: str):
-    study = None
-    run = None
     try:
         cfg = json.load(open(cfg_path))
         exp_name = pathlib.Path(cfg_path).stem
@@ -168,57 +166,7 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
 
         n_envs = int(cfg.get("n_envs", 4))
         total_ts = int(cfg["total_timesteps"])
-        tuning_ts = int(total_ts * cfg.get("tuning_fraction", 0.15))
-
-        hb = cfg.get("hyperband", {})
-        pruner = HyperbandPruner(
-            min_resource=int(hb.get("min_resource", tuning_ts // 3)),
-            max_resource=int(hb.get("max_resource", tuning_ts)),
-            reduction_factor=int(hb.get("reduction_factor", 2)),
-        )
-
-        storage = f"sqlite:///{out_dir}/study.db"
-        study = optuna.create_study(
-            study_name=exp_name,
-            storage=storage,
-            load_if_exists=True,
-            direction="maximize",
-            sampler=TPESampler(),
-            pruner=pruner,
-        )
-
-        wandbc = WeightsAndBiasesCallback(
-            metric_name="value",
-            wandb_kwargs={
-                "project": wandb_project,
-                "group": exp_name,
-                "name": f"{exp_name}-tuning",
-            },
-            as_multirun=True,
-        )
-
-        study.optimize(
-            partial(objective, cfg=cfg, tuning_ts=tuning_ts, n_envs=n_envs),
-            n_trials=cfg["n_trials"],
-            n_jobs=1,
-            show_progress_bar=True,
-            callbacks=[wandbc] if upload == "wandb" and wandb_project else None,
-        )
-
-        (out_dir / "best_params.json").write_text(json.dumps(study.best_params, indent=2))
-        study.trials_dataframe().to_csv(out_dir / "trials.csv", index=False)
-        with open(out_dir / "study_info.json", "w") as f:
-            json.dump(
-                {
-                    "study_name": study.study_name,
-                    "n_trials": len(study.trials),
-                    "best_trial": study.best_trial.number,
-                    "best_value": study.best_value,
-                    "best_params": study.best_params,
-                },
-                f,
-                indent=2,
-            )
+        
 
         # Train final model with best hyperparameters
         env_fns = [
@@ -229,14 +177,14 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             SubprocVecEnv(env_fns),
             norm_obs=True,
             norm_reward=True,
-            gamma=study.best_params.get("gamma", 0.99),
+            gamma=cfg["best_params"].get("gamma", 0.99),
         )
 
         eval_env = VecNormalize(
             SubprocVecEnv(env_fns),
             norm_obs=True,
             norm_reward=False,
-            gamma=study.best_params.get("gamma", 0.99),
+            gamma=cfg["best_params"].get("gamma", 0.99),
         )
 
         tb_dir = out_dir / "tensorboard"
@@ -258,7 +206,7 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             and wandb_project
         ):
             run = wandb.init(
-                project=wandb_project, group=exp_name, name=f"{exp_name}-train_final", config=study.best_params, reinit=True
+                project=wandb_project, group=exp_name, name=f"{exp_name}-train_final", config=cfg["best_params"], reinit=True
             )
             callbacks.append(
                 WandbCallback(model_save_path=str(out_dir / "wandb_models"), verbose=0)
@@ -271,10 +219,10 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             final_env,
             tensorboard_log=str(tb_dir),
             verbose=1,
-            **study.best_params,
+            **cfg["best_params"],
         )
 
-        final_model.learn(total_timesteps=total_ts, callback=callbacks or None)
+        final_model.learn(total_timesteps=total_ts, callback=callbacks or None, progress_bar=True)
         final_model.save(out_dir / "final_model.zip")
         final_env.close()
 
@@ -289,7 +237,7 @@ def run_single(cfg_path: str, upload: str, wandb_project: str):
             run.log_artifact(art)
             run.finish()
     finally:
-        cleanup(study=study, wandb_run=run)
+        cleanup(wandb_run=run)
 
 def main():
     ap = argparse.ArgumentParser()
